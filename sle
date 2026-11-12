@@ -1,0 +1,211 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TOUCHLINE MANAGER</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101722;color:#f4f6fa;font-family:Arial,sans-serif}
+header{background:#172b43;padding:22px 16px;border-bottom:3px solid #397bc2}
+h1{margin:0;font-size:23px}
+.sub{color:#aabbd0;font-size:12px;margin-top:7px}
+main{max-width:760px;margin:auto;padding:14px}
+.card{background:#1b2736;border:1px solid #304052;border-radius:12px;padding:15px;margin-bottom:13px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:#26374b;padding:12px;border-radius:9px;text-align:center}
+.stat b{display:block;font-size:21px;margin-bottom:5px}
+.stat span{font-size:11px;color:#aabbd0}
+nav{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:13px}
+button,select{border:0;border-radius:8px;padding:12px;background:#30445c;color:white;font-size:14px}
+button{cursor:pointer}
+button.active,.primary{background:#2878ce}
+button:disabled{opacity:.4}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:11px 0;border-bottom:1px solid #344355}
+.small{font-size:12px;color:#aabbd0}
+h2{font-size:17px;margin:0 0 13px}
+h3{font-size:14px}
+.green{color:#65d99a}.red{color:#ff8585}
+.pitch{background:#225d43;border-radius:10px;padding:22px 10px;text-align:center;line-height:2.2}
+.pitch span{display:block}
+input{background:#26374b;color:white;border:1px solid #52657c;border-radius:7px;padding:10px;width:100%;margin:7px 0}
+</style>
+</head>
+<body>
+<header>
+<h1>⚽ TOUCHLINE MANAGER</h1>
+<div class="sub">2027 SEASON · FOOTBALL CLUB MANAGEMENT</div>
+</header>
+<main>
+<div class="card">
+<div class="small">MY CLUB</div>
+<h2 id="clubName">수원 삼성 블루윙즈</h2>
+<div class="stats">
+<div class="stat"><b id="money">30억</b><span>이적 자금</span></div>
+<div class="stat"><b id="points">0</b><span>승점</span></div>
+<div class="stat"><b id="played">0</b><span>경기 수</span></div>
+</div>
+</div>
+<nav>
+<button class="active" onclick="show('home',this)">구단</button>
+<button onclick="show('squad',this)">선수단</button>
+<button onclick="show('tactics',this)">전술</button>
+<button onclick="show('match',this)">경기</button>
+<button onclick="show('market',this)">이적시장</button>
+<button onclick="show('league',this)">리그</button>
+</nav>
+<div id="content"></div>
+<div class="card">
+<div class="small">감독 메시지</div>
+<p id="message">수원 삼성의 새로운 감독으로 부임했습니다.</p>
+</div>
+</main>
+<script>
+const initialPlayers=[
+["김현","GK",68],["이상민","DF",69],["박준영","DF",71],
+["김민수","MF",73],["이승우","MF",76],["정우진","FW",74],
+["박성호","DF",70],["최민재","MF",72],["김태훈","FW",75],
+["윤준서","GK",66],["한지훈","MF",71]
+];
+let game=JSON.parse(localStorage.getItem("touchlineSave")||"null")||{
+club:"수원 삼성 블루윙즈",money:30,points:0,played:0,w:0,d:0,l:0,
+morale:75,tactic:"4-2-3-1",players:initialPlayers,
+results:[],season:2027
+};
+let page="home";
+function save(){
+localStorage.setItem("touchlineSave",JSON.stringify(game));
+document.getElementById("money").textContent=game.money+"억";
+document.getElementById("points").textContent=game.points;
+document.getElementById("played").textContent=game.played;
+}
+function msg(t){document.getElementById("message").textContent=t;save()}
+function show(p,btn){
+page=p;
+document.querySelectorAll("nav button").forEach(b=>b.classList.remove("active"));
+if(btn)btn.classList.add("active");
+render();
+}
+function render(){
+save();
+let c=document.getElementById("content");
+if(page==="home"){
+c.innerHTML=`
+<div class="card"><h2>구단 정보</h2>
+<div class="row"><span>시즌</span><b>${game.season}</b></div>
+<div class="row"><span>감독 전술</span><b>${game.tactic}</b></div>
+<div class="row"><span>선수단 사기</span><b>${game.morale}%</b></div>
+<div class="row"><span>전적</span><b>${game.w}승 ${game.d}무 ${game.l}패</b></div>
+</div>
+<div class="card"><h2>구단 운영</h2>
+<button class="primary" onclick="train()">선수단 훈련</button>
+<button onclick="nextSeason()">다음 시즌</button>
+</div>`;
+}
+if(page==="squad"){
+c.innerHTML=`<div class="card"><h2>1군 선수단</h2>
+${game.players.map((p,i)=>`<div class="row">
+<div><b>${p[0]}</b><div class="small">${p[1]}</div></div>
+<b>능력치 ${p[2]}</b></div>`).join("")}
+</div>`;
+}
+if(page==="tactics"){
+c.innerHTML=`<div class="card"><h2>전술 설정</h2>
+<p class="small">다음 경기부터 적용됩니다.</p>
+${["4-2-3-1","4-3-3","3-5-2","5-3-2","4-4-2"].map(t=>
+`<div class="row"><b>${t}</b><button onclick="setTactic('${t}')">${game.tactic===t?"선택됨":"선택"}</button></div>`).join("")}
+</div>`;
+}
+if(page==="match"){
+let strength=Math.round(game.players.reduce((a,p)=>a+p[2],0)/game.players.length);
+c.innerHTML=`<div class="card">
+<h2>다음 경기 · K리그</h2>
+<div class="pitch"><span>수원 삼성 블루윙즈</span>
+<strong style="font-size:27px">VS</strong><span>상대 팀</span></div>
+<div class="row"><span>팀 평균 능력치</span><b>${strength}</b></div>
+<div class="row"><span>현재 포메이션</span><b>${game.tactic}</b></div>
+<div class="row"><span>선수단 사기</span><b>${game.morale}%</b></div>
+<button class="primary" style="width:100%;margin-top:12px" onclick="playMatch()">경기 진행하기</button>
+</div>
+<div class="card"><h2>최근 경기</h2>
+${game.results.slice(-5).reverse().map(r=>`<div class="row">${r}</div>`).join("")||"아직 경기 기록이 없습니다."}
+</div>`;
+}
+if(page==="market"){
+let targets=[
+["김태훈","FW",78,15],["박성민","MF",75,10],
+["이준호","DF",73,7],["최민재","GK",74,8],
+["정도현","FW",81,22],["한승우","MF",79,18]
+];
+c.innerHTML=`<div class="card"><h2>이적시장</h2>
+<p class="small">선수 영입은 이적 자금으로 진행됩니다.</p>
+${targets.map((p,i)=>`<div class="row">
+<div><b>${p[0]}</b><div class="small">${p[1]} · 능력치 ${p[2]} · ${p[3]}억</div></div>
+<button onclick="buy(${i})">영입</button>
+</div>`).join("")}
+</div>`;
+}
+if(page==="league"){
+let teams=[
+["수원 삼성 블루윙즈",game.points],
+["김천 상무",30],["FC 서울",27],["울산 HD",24],
+["전북 현대",22],["포항 스틸러스",20],
+["대전 하나 시티즌",18],["광주 FC",16],
+["제주 SK",13],["강원 FC",11],
+["대구 FC",9],["인천 유나이티드",7]
+].sort((a,b)=>b[1]-a[1]);
+c.innerHTML=`<div class="card"><h2>K리그 순위표</h2>
+${teams.map((t,i)=>`<div class="row">
+<b>${i+1}위　${t[0]}</b><b>${t[1]}점</b>
+</div>`).join("")}
+<p class="small">상대 팀 승점은 게임용 예시 데이터입니다.</p></div>`;
+}
+}
+function train(){
+if(game.money<1){msg("훈련 비용이 부족합니다.");return;}
+game.money-=1;game.morale=Math.min(100,game.morale+10);
+msg("훈련 완료! 선수단 사기가 상승했습니다.");
+}
+function setTactic(t){
+game.tactic=t;msg(t+" 전술을 적용했습니다.");render();
+}
+function playMatch(){
+if(game.played>=38){msg("정규 시즌이 종료되었습니다.");return;}
+let avg=game.players.reduce((a,p)=>a+p[2],0)/game.players.length;
+let bonus=game.tactic==="4-3-3"?3:game.tactic==="5-3-2"?-1:2;
+let chance=Math.random()*100+(avg-70)*1.5+bonus+(game.morale-70)*.15;
+let result,earned;
+if(chance>48){result="승리";earned=3;game.w++;}
+else if(chance>24){result="무승부";earned=1;game.d++;}
+else{result="패배";earned=0;game.l++;}
+game.played++;game.points+=earned;
+game.money+=earned===3?4:earned===1?2:1;
+game.morale=Math.max(25,Math.min(100,game.morale+(earned===3?6:earned===1?1:-7)));
+let gf=Math.floor(Math.random()*3)+(result==="승리"?1:0);
+let ga=Math.floor(Math.random()*3)+(result==="패배"?1:0);
+let text=`${game.played}R · 수원 ${gf}:${ga} 상대팀 · ${result}`;
+game.results.push(text);
+msg(text+" / 승점 "+earned+"점 획득");
+render();
+}
+function buy(i){
+let t=[["김태훈","FW",78,15],["박성민","MF",75,10],
+["이준호","DF",73,7],["최민재","GK",74,8],
+["정도현","FW",81,22],["한승우","MF",79,18]][i];
+if(game.money<t[3]){msg("이적 자금이 부족합니다.");return;}
+game.money-=t[3];game.players.push(t.slice(0,3));
+msg(t[0]+" 선수 영입 완료!");
+render();
+}
+function nextSeason(){
+if(game.played<38){msg("38경기를 모두 진행해야 다음 시즌으로 넘어갈 수 있습니다.");return;}
+game.season++;game.played=0;game.points=0;game.w=0;game.d=0;game.l=0;
+game.results=[];game.money+=10;game.morale=75;
+msg(game.season+" 시즌이 시작되었습니다!");
+render();
+}
+render();
+</script>
+</body>
+</html>
